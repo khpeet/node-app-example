@@ -31,8 +31,6 @@ jobs:
       run: echo "::set-output name=test-result::$(npm test --silent)"
 
 
-  # newrelic-production-alerts-validation:
-  #   runs-on: ubuntu-latest
 
   deploy-to-aws:
     runs-on: ubuntu-latest
@@ -40,8 +38,8 @@ jobs:
     if: always()
 
     steps:
-      - name: Validate tests
-        run: echo "Result: ${{ needs.build-and-run-tests.outputs.test-result }}"
-      - name: Deploy
-        if: success()
-        run: echo "Deploying..."
+    - name: Validate tests
+      run: echo "Result: ${{ needs.build-and-run-tests.outputs.test-result }}"
+    - name: Deploy
+      if: success()
+      run: echo "Deploying..."
