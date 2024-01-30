@@ -35,6 +35,7 @@ jobs:
         else
           echo "Test failed"
           echo "test_result=failed" >> "$GITHUB_OUTPUT"
+          exit 1
         fi
 
 
