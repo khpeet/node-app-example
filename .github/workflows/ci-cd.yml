@@ -15,7 +15,7 @@ jobs:
         node-version: [14.x, 16.x, 18.x]
 
     outputs:
-      test-result: ${{ steps.jest-test.outputs.test-result }}
+      result: ${{ steps.jest-test.outputs.test_result }}
 
     steps:
     - uses: actions/checkout@v3
@@ -28,14 +28,21 @@ jobs:
       run: npm ci
     - name: Run jest test
       id: jest-test
-      run: echo "test-result=$(npm test)" >> $GITHUB_OUTPUT
+      run: |
+        if npm test ; then
+          echo "Test passed"
+          echo "test_result=success" >> "$GITHUB_OUTPUT"
+        else
+          echo "Test failed"
+          echo "test_result=failed" >> "$GITHUB_OUTPUT"
+        fi
 
 
 
   deploy-to-aws:
     runs-on: ubuntu-latest
     needs: build-and-run-tests
-    if: success()
+    if: ${{ needs.build-and-run-tests.outputs.result == 'success' }}
 
     steps:
     - name: Deploy
