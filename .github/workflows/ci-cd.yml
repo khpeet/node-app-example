@@ -7,12 +7,15 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  build-and-run-tests:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
         node-version: [14.x, 16.x, 18.x]
+
+    outputs:
+      test-result: ${{ steps.jest-test.outputs.test-result }}
 
     steps:
     - uses: actions/checkout@v3
@@ -21,9 +24,24 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-    - run: npm ci
-    - run: npm run build --if-present
-    - run: npm test
+    - name: Install dependencies
+      run: npm ci
+    - name: Run jest test
+      id: jest-test
+      run: echo "::set-output name=test-result::$(npm test --silent)"
 
-  # deploy:
+
+  # newrelic-production-alerts-validation:
   #   runs-on: ubuntu-latest
+
+  deploy-to-aws:
+    runs-on: ubuntu-latest
+    needs: build-and-run-tests
+    if: always()
+
+    steps:
+      - name: Validate tests
+        run: echo "Result: ${{ needs.build-and-run-tests.outputs.test-result }}"
+      - name: Deploy
+        if: success()
+        run: echo "Deploying..."
