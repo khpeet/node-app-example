@@ -28,7 +28,7 @@ jobs:
       run: npm ci
     - name: Run jest test
       id: jest-test
-      run: echo "::set-output name=test-result::$(npm test --silent)"
+      run: echo "test-result=$(npm test)" >> $GITHUB_OUTPUT
 
 
 
