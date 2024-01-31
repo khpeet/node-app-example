@@ -42,7 +42,7 @@ jobs:
           exit 1
         fi
 
-    # run custom health check script
+    # validate no open alerts in NR for this service
     - name: New Relic Health Check
       id: newrelic
       run: |
@@ -64,13 +64,12 @@ jobs:
           else
             #echo "Issue Count > 0...blocking deployment."
             echo "newrelic_result=failed" >> "$GITHUB_OUTPUT"
+            exit 1
           fi
         else
           echo "GraphQL call Failed."
           exit 1
         fi
-
-
 
 
   deploy-to-aws:
