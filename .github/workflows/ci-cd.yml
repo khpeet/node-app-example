@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ "main" ]
 
+env:
+  NEW_RELIC_API_KEY: ${{ secrets.NEW_RELIC_API_KEY }}
+
 jobs:
   build-and-run-tests:
     runs-on: ubuntu-latest
@@ -15,7 +18,8 @@ jobs:
         node-version: [14.x, 16.x, 18.x]
 
     outputs:
-      result: ${{ steps.jest-test.outputs.test_result }}
+      jest-result: ${{ steps.jest-test.outputs.test_result }}
+      newrelic-result: ${{ steps.newrelic.outputs.newrelic_result }}
 
     steps:
     - uses: actions/checkout@v3
@@ -38,12 +42,41 @@ jobs:
           exit 1
         fi
 
+    # run custom health check script
+    - name: New Relic Health Check
+      id: newrelic
+      run: |
+        GQL_ENDPOINT="https://api.newrelic.com/graphql"
+
+        response=$(curl -sS ${GQL_ENDPOINT} \
+          -H 'Content-Type: application/json' \
+          -H 'API-Key: '${NEW_RELIC_API_KEY} \
+          --data-binary '{"query":"{\n  actor {\n    entitySearch(\n      query: \"domain=\u0027AIOPS\u0027 and type=\u0027ISSUE\u0027 and tags.relatedEntityName=\u0027Node-Express-Example\u0027\"\n    ) {\n      count\n    }\n  }\n}", "variables":""}')
+
+
+        result=$( jq -r '.data.actor.entitySearch.count' <<< "${response}")
+
+        if [ $? -eq 0 ]; then
+          echo "GraphQL call Successful."
+          echo "Issue Count: "$result
+          if [ "$result" -eq "0" ]; then
+            echo "newrelic_result=success" >> "$GITHUB_OUTPUT"
+          else
+            #echo "Issue Count > 0...blocking deployment."
+            echo "newrelic_result=failed" >> "$GITHUB_OUTPUT"
+          fi
+        else
+          echo "GraphQL call Failed."
+          exit 1
+        fi
+
+
 
 
   deploy-to-aws:
     runs-on: ubuntu-latest
     needs: build-and-run-tests
-    if: ${{ needs.build-and-run-tests.outputs.result == 'success' }}
+    if: ${{ (needs.build-and-run-tests.outputs.jest-result == 'success') && (needs.build-and-run-tests.outputs.newrelic-result == 'success') }}
 
     steps:
     - name: Deploy
