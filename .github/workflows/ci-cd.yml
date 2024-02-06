@@ -90,5 +90,6 @@ jobs:
         region: "US"
         guid: ${{ secrets.NEW_RELIC_DEPLOYMENT_ENTITY_GUID }}
         version: "${{ env.RELEASE_VERSION }}"
+        changelog: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         user: "${{ github.actor }}"
         description: "Automated deploy via GH Actions"
